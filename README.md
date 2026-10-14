@@ -10,6 +10,7 @@ Install scripts are JSON configurations that automate app deployment on HexOS â€
 |-----|-------------|
 | [AFFiNE](affine.json) | Knowledge base software |
 | [Actual Budget](actual-budget.json) | Financial planning software |
+| [Anything LLM](anything-llm.json) | AI chat with documents, agents, and RAG |
 | [Bazarr](bazarr.json) | Subtitle management for Sonarr & Radarr |
 | [BentoPDF](bentopdf.json) | PDF editing toolkit |
 | [Blinko](blinko.json) | Self-hosted bookmarking and note-taking |
@@ -27,12 +28,15 @@ Install scripts are JSON configurations that automate app deployment on HexOS â€
 | [Jellystat](jellystat.json) | Statistics App for Jellyfin |
 | [Lidarr](lidarr.json) | Music collection manager |
 | [Linkwarden](linkwarden.json) | Webpage archiving utility |
+| [LocalAI](localai.json) | Self-hosted drop-in for the OpenAI API |
 | [LubeLogger](lubelogger.json) | Vehicle maintenance tracker |
 | [Mealie](mealie.json) | Recipe Management |
 | [Memos](memos.json) | Note taking tool |
 | [MKVToolNix](mkvtoolnix.json) | A set of tools to create, alter and inspect Matroska files |
 | [Navidrome](navidrome.json) | Music server and streamer |
 | [Nextcloud](nextcloud.json) | File sync and collaboration |
+| [Ollama](ollama.json) | Runs large language models locally |
+| [Open WebUI](open-webui.json) | Chat interface for Ollama and other model servers |
 | [PairDrop](pairdrop.json) | Transfer files cross-clatform |
 | [Palworld Server](palworld.json) | Creates a Multiplayer Palworld Server |
 | [Paperless-ngx](paperless-ngx.json) | Document management system |

@@ -1,0 +1,36 @@
+{
+  "version": 5,
+  "script": {
+    "version": "1.0.0",
+    "changeLog": "Initial"
+  },
+  "requirements": {
+    "locations": ["ApplicationsPerformance", "ApplicationsCapacity"],
+    "specifications": ["2CORE", "2GB", "2GBRAM"],
+    "permissions": ["READ_WRITE_LOCATIONS"],
+    "ports": [30239]
+  },
+  "ensure_directories_exists": [
+    { "path": "$LOCATION(ApplicationsPerformance)" },
+    { "path": "$LOCATION(ApplicationsCapacity)" },
+    { "path": "$LOCATION(ApplicationsPerformance)/anything-llm/data", "snapshot": { "id": "data" } }
+  ],
+  "app_values": {
+    "anything_llm": {
+      "sig_key": "$RANDOM_STRING(32)",
+      "sig_salt": "$RANDOM_STRING(32)",
+      "jwt_secret": "$RANDOM_STRING(32)",
+      "additional_envs": []
+    },
+    "network": {
+      "web_port": { "bind_mode": "published", "port_number": 30239 }
+    },
+    "storage": {
+      "data": "$HOST_PATH($LOCATION(ApplicationsPerformance)/anything-llm/data)",
+      "additional_storage": []
+    },
+    "resources": {
+      "limits": { "cpus": 2, "memory": "$MEMORY(10%, 4096)" }
+    }
+  }
+}

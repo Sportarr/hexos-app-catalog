@@ -1,0 +1,40 @@
+{
+  "version": 5,
+  "script": {
+    "version": "1.0.0",
+    "changeLog": "Initial"
+  },
+  "requirements": {
+    "locations": ["ApplicationsPerformance", "ApplicationsCapacity"],
+    "specifications": ["2CORE", "4GB", "2GBRAM"],
+    "permissions": ["READ_WRITE_LOCATIONS"],
+    "ports": [31028]
+  },
+  "ensure_directories_exists": [
+    { "path": "$LOCATION(ApplicationsPerformance)" },
+    { "path": "$LOCATION(ApplicationsCapacity)" },
+    { "path": "$LOCATION(ApplicationsPerformance)/open-webui/data", "owner": { "user": "apps" }, "snapshot": { "id": "data" } },
+    { "path": "$LOCATION(ApplicationsPerformance)/open-webui/ollama", "owner": { "user": "apps" } }
+  ],
+  "app_values": {
+    "open_webui": {
+      "image_selector": "image",
+      "ollama_base_url": "http://$SERVER_LAN_IP:30068",
+      "openai_api_key": "",
+      "redis_password": "$RANDOM_STRING(24)",
+      "webui_secret_key": "$RANDOM_STRING(32)",
+      "additional_envs": []
+    },
+    "network": {
+      "web_port": { "bind_mode": "published", "port_number": 31028 }
+    },
+    "storage": {
+      "data": "$HOST_PATH($LOCATION(ApplicationsPerformance)/open-webui/data)",
+      "ollama": "$HOST_PATH($LOCATION(ApplicationsPerformance)/open-webui/ollama)",
+      "additional_storage": []
+    },
+    "resources": {
+      "limits": { "cpus": 2, "memory": "$MEMORY(10%, 4096)" }
+    }
+  }
+}

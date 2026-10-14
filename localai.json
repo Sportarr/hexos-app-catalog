@@ -1,0 +1,57 @@
+{
+  "version": 5,
+  "script": {
+    "version": "1.0.0",
+    "changeLog": "Initial"
+  },
+  "requirements": {
+    "locations": ["ApplicationsPerformance", "ApplicationsCapacity"],
+    "specifications": ["4CORE", "10GB", "8GBRAM", "GPU"],
+    "permissions": ["READ_WRITE_LOCATIONS"],
+    "ports": [30286]
+  },
+  "installation_questions": [
+    {
+      "question": "What should LocalAI run on?",
+      "description": "Pick the build that matches your hardware. With no graphics card, choose CPU, which is fine for small models.",
+      "type": "select",
+      "key": "hardware",
+      "options": [
+        { "text": "CPU only", "value": "image" },
+        { "text": "NVIDIA graphics card", "value": "cuda12_image" },
+        { "text": "AMD Radeon graphics card", "value": "rocm_image" },
+        { "text": "Intel graphics", "value": "intel_image" },
+        { "text": "Any graphics card through Vulkan", "value": "vulkan_image" }
+      ],
+      "default": "image"
+    }
+  ],
+  "ensure_directories_exists": [
+    { "path": "$LOCATION(ApplicationsPerformance)" },
+    { "path": "$LOCATION(ApplicationsCapacity)" },
+    { "path": "$LOCATION(ApplicationsCapacity)/localai/models", "owner": { "user": "apps" }, "snapshot": { "id": "models" } },
+    { "path": "$LOCATION(ApplicationsCapacity)/localai/backends", "owner": { "user": "apps" } },
+    { "path": "$LOCATION(ApplicationsPerformance)/localai/config", "owner": { "user": "apps" }, "snapshot": { "id": "config" } },
+    { "path": "$LOCATION(ApplicationsPerformance)/localai/data", "owner": { "user": "apps" }, "snapshot": { "id": "data" } }
+  ],
+  "app_values": {
+    "localai": {
+      "image_selector": "$QUESTION(hardware)",
+      "additional_envs": []
+    },
+    "network": {
+      "web_port": { "bind_mode": "published", "port_number": 30286 }
+    },
+    "storage": {
+      "models": "$HOST_PATH($LOCATION(ApplicationsCapacity)/localai/models)",
+      "backends": "$HOST_PATH($LOCATION(ApplicationsCapacity)/localai/backends)",
+      "config": "$HOST_PATH($LOCATION(ApplicationsPerformance)/localai/config)",
+      "data": "$HOST_PATH($LOCATION(ApplicationsPerformance)/localai/data)",
+      "additional_storage": []
+    },
+    "resources": {
+      "limits": { "cpus": 4, "memory": "$MEMORY(50%, 8192)" },
+      "gpus": "$GPU_CONFIG()"
+    }
+  }
+}

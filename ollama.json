@@ -1,0 +1,48 @@
+{
+  "version": 5,
+  "script": {
+    "version": "1.0.0",
+    "changeLog": "Initial"
+  },
+  "requirements": {
+    "locations": ["ApplicationsPerformance", "ApplicationsCapacity"],
+    "specifications": ["4CORE", "10GB", "8GBRAM", "GPU"],
+    "permissions": ["READ_WRITE_LOCATIONS"],
+    "ports": [30068]
+  },
+  "installation_questions": [
+    {
+      "question": "Which graphics card should Ollama use?",
+      "description": "An NVIDIA card is picked up automatically. Choose AMD for a Radeon card. With no card, Ollama runs on the CPU, which is fine for small models.",
+      "type": "select",
+      "key": "hardware",
+      "options": [
+        { "text": "NVIDIA, or no graphics card", "value": "image" },
+        { "text": "AMD Radeon", "value": "rocm_image" }
+      ],
+      "default": "image"
+    }
+  ],
+  "ensure_directories_exists": [
+    { "path": "$LOCATION(ApplicationsPerformance)" },
+    { "path": "$LOCATION(ApplicationsCapacity)" },
+    { "path": "$LOCATION(ApplicationsCapacity)/ollama/data", "snapshot": { "id": "data" } }
+  ],
+  "app_values": {
+    "ollama": {
+      "image_selector": "$QUESTION(hardware)",
+      "additional_envs": []
+    },
+    "network": {
+      "api_port": { "bind_mode": "published", "port_number": 30068 }
+    },
+    "storage": {
+      "data": "$HOST_PATH($LOCATION(ApplicationsCapacity)/ollama/data)",
+      "additional_storage": []
+    },
+    "resources": {
+      "limits": { "cpus": 4, "memory": "$MEMORY(50%, 8192)" },
+      "gpus": "$GPU_CONFIG()"
+    }
+  }
+}
