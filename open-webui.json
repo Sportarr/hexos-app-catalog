@@ -6,7 +6,7 @@
   },
   "requirements": {
     "locations": ["ApplicationsPerformance", "ApplicationsCapacity"],
-    "specifications": ["4CORE", "10GB", "8GBRAM", "GPU"],
+    "specifications": ["4CORE", "10GB", "8GBRAM"],
     "permissions": ["READ_WRITE_LOCATIONS"],
     "ports": [31028]
   },
