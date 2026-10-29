@@ -142,6 +142,17 @@ An existing Jellystat account must authenticate; the connector only creates an a
 
 Run the mocked API and password-hash compatibility tests with `bun test _lib/`, then the catalog validator with `bun _lib/validate.ts`. The hook tests make no network requests.
 
+## Custom apps and their images
+
+A custom app is one TrueNAS's catalog doesn't carry: its script says `"custom": true` and gives its own `metadata` (name, description, icon, version), and HexOS installs it on TrueNAS's generic `ix-app` chart with the image in `app_values.image`. Kodi is one.
+
+- **Pin a version.** `tag` names a version (`1.4.1`, `21.2-1`), never `latest`, so every server runs the same image. It may carry the image's digest too, `1.4.1@sha256:<64 hex digits>`, so a tag pushed again upstream can't change what new installs get. `bun _lib/validate.ts` refuses a tag with no version in it, except on an `internal` app, which never reaches a customer's server.
+- **Raise `script.version` with every change the app runs.** A server that already has the app sees a change only when the catalog's `script.version` is higher than the one it installed, compared as semver, so it must be `x.y.z`. Anything outside `metadata`, the `script` block and `internal` counts. On a pull request, Validate runs `bun _lib/script_bumps.ts origin/<base>` and refuses a change that leaves the version where it was.
+- **The image watcher.** Every morning the Image watch workflow asks each custom app's registry for its tags (`bun _lib/image_watch.ts check`). A newer tag is one shaped like the pinned one, with the same text between higher numbers: `1.4.1` is followed by `1.5.0`, and never by `sha-0ab6cdc`, `latest` or `1.5.0-rc1`; `21.2-1` by `21.2-2` or `21.3-1`. A number inside a name counts too, so `-java21` would follow to `-java25`. For each app with one, it opens a pull request on `image-watch/<app>` carrying the new tag (and its digest when the pin has one), a raised `script.version`, `metadata.version` where it reads as the tag or its leading numbers (Kodi's `21.2` of `21.2-1`), and a change log. It names a major step and a `metadata.version` it couldn't follow for the reviewer, and reports a pinned digest its tag no longer names. A newer tag replaces the one an open pull request carries. Closing a pull request without merging declines that tag, and the next newer one opens a new pull request. Run it by hand from Actions with Run workflow.
+- **Before merging an image update,** update an installed copy on a lab box from its card's Update now, check it still runs with its data, then install it fresh.
+
+A pull request the workflow opens with its own token starts no other workflow, so Validate doesn't run on it by itself (the watcher runs the validator and the version check before it pushes). Close and reopen the pull request to start Validate, or give the workflow an `IMAGE_WATCH_TOKEN` secret (a GitHub App or fine-grained token with contents and pull requests write) so it runs as it does for anyone else. The repository must allow GitHub Actions to create pull requests.
+
 ## Contributing
 
 1. Fork this repository
