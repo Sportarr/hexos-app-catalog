@@ -24,8 +24,8 @@ export const LOCATIONS = [
   "VirtualDisks",
 ] as const;
 
-/** APP_SPEC_REGEX. */
-export const SPEC_REGEX = /^(\d+)(MBRAM|GBRAM|MB|GB|CORE)$|^GPU$/;
+/** APP_SPEC_REGEX. DISPLAY: the app draws on a TV or monitor plugged into the server. */
+export const SPEC_REGEX = /^(\d+)(MBRAM|GBRAM|MB|GB|CORE)$|^GPU$|^DISPLAY$/;
 
 /** AppPermission. */
 export const PERMISSIONS = ["READ_WRITE_LOCATIONS"] as const;
@@ -50,12 +50,22 @@ export const CALL_MACROS = [
   "IF",
   "QUESTION",
   "MEMORY",
+  "CPUS",
   "RANDOM_STRING",
   "HOST_PATH",
   "MOUNTED_HOST_PATH",
   "LOCATION",
   "APP_INSTALLED",
   "GPU_CONFIG",
+  // A partner app's per-install credential, issued by the platform at install time. The argument
+  // is the partner id; empty means the app being installed.
+  "PARTNER_TOKEN",
+  // A display app's devices (its card's DRM and HDMI audio nodes, plus input), its card's slot, its
+  // TrueNAS GPU selection (an NVIDIA card by UUID), and the port it shows on ("HDMI-A:1").
+  "DISPLAY_DEVICES",
+  "DISPLAY_GPU_PCI",
+  "DISPLAY_GPU_CONFIG",
+  "DISPLAY_PORT",
 ] as const;
 
 /** Macros substituted as bare tokens, with no argument list. */
@@ -106,7 +116,13 @@ export const HOOK_TARGET_TYPES = ["files"] as const;
 export const SUPPORTED_WIDGETS_SCHEMA = 3;
 
 /** Widget slot types. An image is never a slot: the card's artwork is its background. */
-export const WIDGET_SLOT_TYPES = ["text", "stat", "list", "progress"] as const;
+export const WIDGET_SLOT_TYPES = ["text", "stat", "list", "progress", "chart"] as const;
+
+/**
+ * Most slides a widget adds after its own title and slots. A box from before
+ * slides draws the first view alone, so that view must stand on its own.
+ */
+export const WIDGET_MAX_SLIDES = 3;
 
 /** The shortest widget `refresh` the platform honours, in seconds: one deck poll (MIN_REFRESH_S). */
 export const WIDGET_MIN_REFRESH_S = 5;
