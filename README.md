@@ -105,7 +105,7 @@ Leave it out when the owner picks the ports inside the app, as with each Minecra
 
 An installed app's Settings tab lists each question with its current answer and a Change button. A password stays hidden until the owner shows it, so a question whose key names a secret (`token`, `secret`, `password`, `api_key`) must be typed `password`, and `bun run validate` refuses it as `text`.
 
-Something the app makes rather than the owner answers, such as Valheim's join code, comes from a widget: its `settings` names up to four of its `stat` fields, and the tab shows each with its label, its value and a Copy button in place of Change. The field doesn't have to fill a slot on the card.
+Something the app makes rather than the owner answers, such as Valheim's join code, comes from a widget: its `settings` names up to four of its `stat` fields, and the tab shows each with its label, its value and a Copy button in place of Change. The field doesn't have to fill a slot on the card. While the app is still getting the value (Valheim's server starting), send the field with an empty `value`: the tab shows its label with the value loading and Copy off, rather than no row at all.
 
 ```json
 "settings": [{ "field": "code" }]
