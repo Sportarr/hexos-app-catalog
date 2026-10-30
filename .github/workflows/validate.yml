@@ -32,3 +32,12 @@ jobs:
         run: bun test _lib/
       - name: Validate install scripts
         run: bun _lib/validate.ts
+      # A custom app's change reaches the servers that already have it only with a raised
+      # script.version, so compare each one with the branch this merges into.
+      - name: Check raised script versions
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --quiet --no-tags --depth=1 origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          bun _lib/script_bumps.ts "origin/$BASE_REF"
