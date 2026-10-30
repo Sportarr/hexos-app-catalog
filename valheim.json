@@ -4,10 +4,20 @@
   "internal": true,
   "metadata": {
     "name": "Valheim",
-    "description": "Your own Valheim world, running on this server so friends can play in it whenever they like. They join with a join code from any platform Valheim plays across, and nothing needs setting up on your router. The server updates Valheim itself whenever nobody is playing, and backs up the world every hour.",
+    "description": "A collaborative exploration and survival game for 1-10 players, set in a procedurally generated afterlife inspired by Viking culture. Battle, build, and conquer your way to a saga worthy of Odin's patronage!",
     "icon": "valheim/icon.png",
     "version": "1.4.1",
     "categories": ["games"],
+    "screenshots": [
+      "valheim/screenshot-1.jpg",
+      "valheim/screenshot-2.jpg",
+      "valheim/screenshot-3.jpg",
+      "valheim/screenshot-4.jpg",
+      "valheim/screenshot-5.jpg",
+      "valheim/screenshot-6.jpg",
+      "valheim/screenshot-7.jpg",
+      "valheim/screenshot-8.jpg"
+    ],
     "keywords": ["valheim", "game server", "dedicated server", "crossplay", "multiplayer", "steam", "xbox"],
     "homepage": "https://www.valheimgame.com/",
     "sources": ["https://github.com/community-valheim-tools/valheim-server-docker"]
@@ -20,7 +30,8 @@
     "locations": ["ApplicationsPerformance"],
     "specifications": ["2CORE", "4GBRAM", "2GB"],
     "permissions": ["READ_WRITE_LOCATIONS"],
-    "ports": [2456, 2457, 2458]
+    "ports": [2456, 2457, 2458],
+    "game_port": 2456
   },
   "installation_questions": [
     {

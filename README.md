@@ -88,6 +88,17 @@ Every value must match `^(\d+)(MBRAM|GBRAM|MB|GB|CORE)$` or be the literal `GPU`
 }
 ```
 
+## The port players join on
+
+A game server names the port players connect to in `requirements.game_port`, and the app's details pane shows it beside the app version. It must be one of `requirements.ports`, and `bun run validate` refuses one that isn't. It changes nothing a server runs: HexOS reads it from the catalog's current script, so changing it needs no new `script.version`. Leave it out when the owner picks the ports inside the app, as with each Minecraft server in Crafty 4.
+
+```json
+"requirements": {
+  "ports": [2456, 2457, 2458],
+  "game_port": 2456
+}
+```
+
 ## Collections
 
 A collection is a curated set of apps installed in one walk ("Media library": a media server, the *arr apps and a download client). Each is a JSON file in `_collections/`, named after its id (`media-management.json`). The catalog sync reads them alongside the install scripts, and HexOS shows them in the app catalog to accounts with the `app-collections` feature.

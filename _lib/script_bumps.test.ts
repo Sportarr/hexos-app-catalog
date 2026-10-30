@@ -31,6 +31,13 @@ describe("bumpProblem", () => {
     expect(bumpProblem(kodi("21.2-1", "1.0.0"), after)).toBeNull();
   });
 
+  test("the game port the details pane shows changes nothing a server runs, the published ports do", () => {
+    const ports = (game_port?: number) => ({ requirements: { ports: [2456, 2457], ...(game_port && { game_port }) } });
+    expect(bumpProblem(kodi("21.2-1", "1.0.0", ports()), kodi("21.2-1", "1.0.0", ports(2456)))).toBeNull();
+    const moved = kodi("21.2-1", "1.0.0", { requirements: { ports: [2456, 2459], game_port: 2456 } });
+    expect(bumpProblem(kodi("21.2-1", "1.0.0", ports(2456)), moved)).not.toBeNull();
+  });
+
   test("a change in layout alone is no change", () => {
     const { app_values: _values, ...rest } = kodi("21.2-1", "1.0.0");
     const reordered = { app_values: { image: { tag: "21.2-1", repository: "eshtek/kodi" } }, ...rest };

@@ -17,10 +17,15 @@ const canonical = (value: unknown): string =>
 
 /**
  * What a server runs from a script: everything but the catalog card (metadata), the version block
- * itself, and `internal`, which only says which catalog lists the app.
+ * itself, `internal`, which only says which catalog lists the app, and `requirements.game_port`,
+ * which the deck reads from the catalog's current script to show the port players join on.
  */
 export function runPart(script: Record<string, unknown>): string {
   const { metadata: _metadata, script: _block, internal: _internal, ...runs } = script;
+  if (isObject(runs.requirements)) {
+    const { game_port: _gamePort, ...requirements } = runs.requirements;
+    runs.requirements = requirements;
+  }
   return canonical(runs);
 }
 

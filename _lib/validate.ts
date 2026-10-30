@@ -302,6 +302,10 @@ function validate(file: string, script: Record<string, unknown>) {
         err(file, `requirements.ports: "${String(port)}" is not a valid port`);
       }
     }
+    // The port players join a game on, shown on the app's details pane: one the app publishes
+    if (req.game_port !== undefined && !(Array.isArray(req.ports) && req.ports.includes(req.game_port))) {
+      err(file, `requirements.game_port: "${String(req.game_port)}" is not one of requirements.ports`);
+    }
   }
 
   // --- metadata and its assets ---
