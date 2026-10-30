@@ -62,6 +62,7 @@ Install scripts are JSON configurations that automate app deployment on HexOS â€
 | [Syncthing](syncthing.json) | Continuous file synchronization |
 | [Tautulli](tautulli.json) | Watch history and stats for Plex |
 | [Uptime Kuma](uptime-kuma.json) | Self-hosted uptime monitoring |
+| [Valheim](valheim.json) | Viking survival game server, joined with a crossplay join code |
 | [Vaultwarden](vaultwarden.json) | Bitwarden-compatible password manager |
 | [Warracker](warracker.json) | warranty tracker |
 | [Wiki.js](wiki-js.json) | Open source Wiki software |
@@ -85,6 +86,29 @@ Every value must match `^(\d+)(MBRAM|GBRAM|MB|GB|CORE)$` or be the literal `GPU`
 "requirements": {
   "specifications": ["4CORE", "30GB", "16GBRAM"]
 }
+```
+
+## The port players join on
+
+A game server names the port players connect to in `requirements.game_port`. The app's details pane shows it beside the app version, and, for a game with no web UI, Copy address in Launch's place copies the server's LAN address with that port. It must be one of `requirements.ports`, and `bun run validate` refuses one that isn't. It changes nothing a server runs: HexOS reads it from the catalog's current script, so changing it needs no new `script.version`. Palworld names `38211`.
+
+Leave it out when the owner picks the ports inside the app, as with each Minecraft server in Crafty 4, and when players can't join at the LAN address. Valheim names none: on crossplay, Valheim's server manual says a player joins with the join code, the public address or the server list, never a local address, so Copy address would hand out one that fails.
+
+```json
+"requirements": {
+  "ports": [30443, 38212, 38211],
+  "game_port": 38211
+}
+```
+
+## Values on the Settings tab
+
+An installed app's Settings tab lists each question with its current answer and a Change button. A password stays hidden until the owner shows it, so a question whose key names a secret (`token`, `secret`, `password`, `api_key`) must be typed `password`, and `bun run validate` refuses it as `text`.
+
+Something the app makes rather than the owner answers, such as Valheim's join code, comes from a widget: its `settings` names up to four of its `stat` fields, and the tab shows each with its label, its value and a Copy button in place of Change. The field doesn't have to fill a slot on the card. While the app is still getting the value (Valheim's server starting), send the field with an empty `value`: the tab shows its label with the value loading and Copy off, rather than no row at all.
+
+```json
+"settings": [{ "field": "code" }]
 ```
 
 ## Collections
@@ -141,6 +165,22 @@ Jellyfin offers optional connections to Jellystat and Seerr, plus a read-only Fl
 An existing Jellystat account must authenticate; the connector only creates an account when Jellystat reports a fresh setup. Both connectors refuse to replace a different existing media-server binding, a Seerr on the same Jellyfin at another port, protocol or URL path included, and in a collection they step aside (`ctx.skip`) rather than wait on a Try again. Fladder's check does not change its configured server address.
 
 Run the mocked API and password-hash compatibility tests with `bun test _lib/`, then the catalog validator with `bun _lib/validate.ts`. The hook tests make no network requests.
+
+## Custom apps and their images
+
+A custom app is one TrueNAS's catalog doesn't carry: its script says `"custom": true` and gives its own `metadata` (name, description, icon, version), and HexOS installs it on TrueNAS's generic `ix-app` chart with the image in `app_values.image`. Kodi is one.
+
+- **Pin a version.** `tag` names a version (`1.4.1`, `21.2-1`), never `latest`, so every server runs the same image. It may carry the image's digest too, `1.4.1@sha256:<64 hex digits>`, so a tag pushed again upstream can't change what new installs get. `bun _lib/validate.ts` refuses a tag with no version in it, except on an `internal` app, which never reaches a customer's server.
+- **Raise `script.version` with every change the app runs.** A server that already has the app sees a change only when the catalog's `script.version` is higher than the one it installed, compared as semver, so it must be `x.y.z`. Anything outside `metadata`, the `script` block and `internal` counts. On a pull request, Validate runs `bun _lib/script_bumps.ts origin/<base>` and refuses a change that leaves the version where it was, along with the two changes an update can't carry (below).
+- **The image watcher.** Every morning the Image watch workflow asks each custom app's registry for its tags (`bun _lib/image_watch.ts check`). A newer tag is one shaped like the pinned one, with the same text between higher numbers: `1.4.1` is followed by `1.5.0`, and never by `sha-0ab6cdc`, `latest` or `1.5.0-rc1`; `21.2-1` by `21.2-2` or `21.3-1`. A number inside a name counts too, so `-java21` would follow to `-java25`. It offers two tags per app, each in its own pull request: the newest with the pin's first number, on `image-watch/<app>`, and the newest with a higher first number (the next major version), as a draft on `image-watch/<app>-major`, so a major version waiting on a person never holds back fixes to the one servers run. Each carries the new tag (and its digest when the pin has one), a raised `script.version`, `metadata.version` where it reads as the tag or its leading numbers (Kodi's `21.2` of `21.2-1`), and a change log. Its description compares what the two images declare for linux/amd64 (variables, ports, folders, start command and user), quotes the GitHub release notes between them when the script's `sources` name the repository, names a `metadata.version` it couldn't follow, and the run reports a pinned digest its tag no longer names. A newer tag replaces the one an open pull request carries, until a person commits to its branch: from then on the watcher leaves the branch alone and only comments when a newer tag is out. Closing a pull request without merging declines that tag, and the next newer one opens a new pull request. Run it by hand from Actions with Run workflow.
+- **A new major version** often needs more than its tag: a renamed option, a moved folder, a new question. Push the script's changes to the draft's branch. An update applies the new script to every server that has the app with the answers it already has, read from where the old script put them, and keeps no way back to the old script, so:
+  - A new required question needs a default, or the platform refuses every installed server's update. Validate refuses one without.
+  - Keep each question's `key`. A server's answer is found under the old key, so a renamed question starts at its default.
+  - Keep every host folder mounted; a new `mount_path` for it is fine. The servers' data is in those folders, so Validate refuses a script that stops mounting one.
+  - A change to the data that can't be undone (a database migration, a world format) has only the snapshot the update takes first. Give the folder a `snapshot` id in `ensure_directories_exists`.
+- **Before merging an image update,** update an installed copy on a lab box from its card's Update now, check it still runs with its data, then install it fresh.
+
+A pull request the workflow opens with its own token starts no other workflow, so Validate doesn't run on it by itself (the watcher runs the validator and the version check before it pushes). Close and reopen the pull request to start Validate, or give the workflow an `IMAGE_WATCH_TOKEN` secret (a GitHub App or fine-grained token with contents and pull requests write) so it runs as it does for anyone else. The repository must allow GitHub Actions to create pull requests.
 
 ## Contributing
 

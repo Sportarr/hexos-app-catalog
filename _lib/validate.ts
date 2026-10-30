@@ -23,6 +23,7 @@ import {
   SPEC_REGEX,
   SUPPORTED_VERSIONS,
   SUPPORTED_WIDGETS_SCHEMA,
+  WIDGET_MAX_SETTINGS,
   WIDGET_MAX_SLIDES,
   WIDGET_MAX_SLOTS,
   WIDGET_MIN_REFRESH_S,
@@ -36,6 +37,9 @@ const warnings: Problem[] = [];
 
 const err = (file: string, message: string) => errors.push({ file, message });
 const warn = (file: string, message: string) => warnings.push({ file, message });
+
+/** A question key that names a secret: an API key, a token, a password. */
+const SECRET_KEY = /token|secret|passw(or)?d|api_?key/i;
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -302,6 +306,10 @@ function validate(file: string, script: Record<string, unknown>) {
         err(file, `requirements.ports: "${String(port)}" is not a valid port`);
       }
     }
+    // The port players join a game on, shown on the app's details pane: one the app publishes
+    if (req.game_port !== undefined && !(Array.isArray(req.ports) && req.ports.includes(req.game_port))) {
+      err(file, `requirements.game_port: "${String(req.game_port)}" is not one of requirements.ports`);
+    }
   }
 
   // --- metadata and its assets ---
@@ -339,6 +347,10 @@ function validate(file: string, script: Record<string, unknown>) {
       if (!Array.isArray(options) || options.length === 0) {
         err(file, `${where}: select question "${key}" has no options`);
       }
+    }
+    // The app's Settings tab shows a text answer as it is and hides a password until asked
+    if (q.type === "text" && SECRET_KEY.test(key)) {
+      err(file, `${where}: question "${key}" names a secret, so make its type "password"`);
     }
   };
 
@@ -383,6 +395,31 @@ function validate(file: string, script: Record<string, unknown>) {
 
   // --- app_values ---
   if (!isObject(script.app_values)) err(file, "app_values is missing");
+
+  // --- a custom app's image ---
+  // A custom app runs on TrueNAS's ix-app chart, so its image is whatever app_values.image names,
+  // and a server that already has the app sees another only through a raised script.version, which
+  // the platform reads with semver (one it can't read never offers its update). A tag that moves
+  // (latest) gives new installs a different image from the servers that have it, and the image
+  // watcher has no version in it to follow. An internal app never reaches a customer's server.
+  if (script.custom === true) {
+    const image = isObject(script.app_values) ? script.app_values.image : undefined;
+    if (!isObject(image) || typeof image.repository !== "string" || !image.repository.trim()) {
+      err(file, "app_values.image.repository is missing: a custom app runs the image it names");
+    } else if (script.internal !== true) {
+      const tag = typeof image.tag === "string" ? image.tag : "";
+      const [version, digest] = tag.split("@");
+      if (!/\d/.test(version)) {
+        err(file, `app_values.image.tag "${tag}" names no version; pin one (1.4.1) so every server runs the same image`);
+      }
+      if (digest !== undefined && !/^sha256:[0-9a-f]{64}$/.test(digest)) {
+        err(file, `app_values.image.tag "${tag}": a pinned digest is the tag, "@", then sha256: and 64 hex digits`);
+      }
+    }
+    if (isObject(scriptMeta) && typeof scriptMeta.version === "string" && !/^\d+\.\d+\.\d+$/.test(scriptMeta.version)) {
+      err(file, `script.version "${scriptMeta.version}" must be x.y.z: servers compare it with semver to offer the update`);
+    }
+  }
 
   // --- hooks (v5 and v6) ---
   const hookIds = new Set<string>();
@@ -708,6 +745,19 @@ function validate(file: string, script: Record<string, unknown>) {
             const titles = [widget.title, ...widget.slides.map((slide) => (isObject(slide) ? slide.title : undefined))];
             if (new Set(titles).size !== titles.length) {
               err(file, `${where}: each view needs its own title; the widget's and every slide's must differ`);
+            }
+          }
+        }
+        // Stat fields the app's Settings tab shows, read-only, each with Copy
+        if (widget.settings !== undefined) {
+          if (!Array.isArray(widget.settings) || widget.settings.length === 0) {
+            err(file, `${where}: settings must be a non-empty array`);
+          } else {
+            if (widget.settings.length > WIDGET_MAX_SETTINGS) err(file, `${where}: max ${WIDGET_MAX_SETTINGS} settings`);
+            for (const [k, setting] of widget.settings.entries()) {
+              if (!isObject(setting) || typeof setting.field !== "string" || !setting.field.trim()) {
+                err(file, `${where}.settings[${k}]: field is missing`);
+              }
             }
           }
         }

@@ -129,3 +129,6 @@ export const WIDGET_MIN_REFRESH_S = 5;
 
 /** Most slots a widget declares. */
 export const WIDGET_MAX_SLOTS = 3;
+
+/** Most fields a widget shows on its app's Settings tab (a join code), each read-only with Copy. */
+export const WIDGET_MAX_SETTINGS = 4;
