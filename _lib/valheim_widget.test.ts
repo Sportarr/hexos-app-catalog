@@ -152,15 +152,21 @@ describe("run", () => {
     expect((await online({ players: ODVAR_IN, world: "" }))[0].title).toBe("Valheim");
   });
 
-  test("before the server is ready there is no code and nobody on, and the card still folds", async () => {
+  // The Settings tab shows the row as still to come while the value is empty
+  test("before the server is ready the code reads empty, nobody is on, and the card still folds", async () => {
     const result = await run(context(configDir()));
-    expect(result.fields?.code).toBeUndefined();
+    expect(result.fields?.code).toEqual({ type: "stat", label: "Join code", value: "" });
     expect(result.fields?.online).toEqual({ type: "list", entries: [] });
+  });
+
+  test("a session file from before the code exists reads empty too", async () => {
+    const result = await run(context(configDir({ session: `${NO_CODE_YET}\n` })));
+    expect(result.fields?.code).toEqual({ type: "stat", label: "Join code", value: "" });
   });
 
   test("with no mounts known, the same", async () => {
     const result = await run(context(null));
-    expect(result.fields?.code).toBeUndefined();
+    expect(result.fields?.code).toEqual({ type: "stat", label: "Join code", value: "" });
     expect(result.fields?.count).toEqual({ type: "stat", label: "Players", value: "0/10" });
   });
 });

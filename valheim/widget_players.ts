@@ -13,7 +13,8 @@ import type { WidgetContext, WidgetFieldValue, WidgetMount, WidgetQueryResult } 
 //   Created new join code 282677 for session "HexOS Valheim"
 //   Session "HexOS Valheim" with join code 282677 and IP 203.0.113.7:2456 is active with 0 player(s)
 // The image's log filter writes the latest such line to /config/hexos-session.txt (the script's
-// VALHEIM_LOG_FILTER_CONTAINS_HexosSession and _HexosNewCode). No file means the server isn't ready.
+// VALHEIM_LOG_FILTER_CONTAINS_HexosSession and _HexosNewCode). No file means the server isn't ready:
+// it's still starting, and the code reads empty.
 //
 // The players. The server's own count can't be trusted: when a player quit on demeter (2026-10-30)
 // it logged "Player connection lost ... now 1 player(s)" and never logged the drop. What it does log
@@ -104,7 +105,8 @@ export async function run(ctx: WidgetContext): Promise<WidgetQueryResult> {
     online: { type: "list", entries: names.length ? [{ title: world, subtitle: playersLine(names), image: CAMPFIRE }] : [] },
     count: { type: "stat", label: "Players", value: `${names.length}/${MAX_PLAYERS}` },
   };
-  if (code) fields.code = { type: "stat", label: "Join code", value: code };
+  // Empty until the server has one, which the Settings tab shows as still to come
+  fields.code = { type: "stat", label: "Join code", value: code ?? "" };
   return { fields };
 }
 
