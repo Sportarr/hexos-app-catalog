@@ -88,6 +88,29 @@ Every value must match `^(\d+)(MBRAM|GBRAM|MB|GB|CORE)$` or be the literal `GPU`
 }
 ```
 
+## The port players join on
+
+A game server names the port players connect to in `requirements.game_port`. The app's details pane shows it beside the app version, and, for a game with no web UI, Copy address in Launch's place copies the server's LAN address with that port. It must be one of `requirements.ports`, and `bun run validate` refuses one that isn't. It changes nothing a server runs: HexOS reads it from the catalog's current script, so changing it needs no new `script.version`. Palworld names `38211`.
+
+Leave it out when the owner picks the ports inside the app, as with each Minecraft server in Crafty 4, and when players can't join at the LAN address. Valheim names none: on crossplay, Valheim's server manual says a player joins with the join code, the public address or the server list, never a local address, so Copy address would hand out one that fails.
+
+```json
+"requirements": {
+  "ports": [30443, 38212, 38211],
+  "game_port": 38211
+}
+```
+
+## Values on the Settings tab
+
+An installed app's Settings tab lists each question with its current answer and a Change button. A password stays hidden until the owner shows it, so a question whose key names a secret (`token`, `secret`, `password`, `api_key`) must be typed `password`, and `bun run validate` refuses it as `text`.
+
+Something the app makes rather than the owner answers, such as Valheim's join code, comes from a widget: its `settings` names up to four of its `stat` fields, and the tab shows each with its label, its value and a Copy button in place of Change. The field doesn't have to fill a slot on the card.
+
+```json
+"settings": [{ "field": "code" }]
+```
+
 ## Collections
 
 A collection is a curated set of apps installed in one walk ("Media library": a media server, the *arr apps and a download client). Each is a JSON file in `_collections/`, named after its id (`media-management.json`). The catalog sync reads them alongside the install scripts, and HexOS shows them in the app catalog to accounts with the `app-collections` feature.

@@ -22,7 +22,7 @@
     {
       "question": "Input your MobyGames API Key",
       "description": "Instructions for how to generate an API key for MobyGames can be found here: https://www.mobygames.com/info/api",
-      "type": "text",
+      "type": "password",
       "key": "mobygames_api_key",
       "required": false
     },
@@ -43,14 +43,14 @@
     {
       "question": "Input your RetroAchievements API key",
       "description": "Generate an API key from your RetroAchievements account settings (https://retroachievements.org/settings). Adds achievement progress tracking.",
-      "type": "text",
+      "type": "password",
       "key": "retroachievements_api_key",
       "required": false
     },
     {
       "question": "Input your SteamGridDB API key",
       "description": "Generate an API key from your SteamGridDB profile preferences (https://www.steamgriddb.com/profile/preferences/api). Provides additional high-quality cover art.",
-      "type": "text",
+      "type": "password",
       "key": "steamgriddb_api_key",
       "required": false
     },

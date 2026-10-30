@@ -23,6 +23,7 @@ import {
   SPEC_REGEX,
   SUPPORTED_VERSIONS,
   SUPPORTED_WIDGETS_SCHEMA,
+  WIDGET_MAX_SETTINGS,
   WIDGET_MAX_SLIDES,
   WIDGET_MAX_SLOTS,
   WIDGET_MIN_REFRESH_S,
@@ -36,6 +37,9 @@ const warnings: Problem[] = [];
 
 const err = (file: string, message: string) => errors.push({ file, message });
 const warn = (file: string, message: string) => warnings.push({ file, message });
+
+/** A question key that names a secret: an API key, a token, a password. */
+const SECRET_KEY = /token|secret|passw(or)?d|api_?key/i;
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -302,6 +306,10 @@ function validate(file: string, script: Record<string, unknown>) {
         err(file, `requirements.ports: "${String(port)}" is not a valid port`);
       }
     }
+    // The port players join a game on, shown on the app's details pane: one the app publishes
+    if (req.game_port !== undefined && !(Array.isArray(req.ports) && req.ports.includes(req.game_port))) {
+      err(file, `requirements.game_port: "${String(req.game_port)}" is not one of requirements.ports`);
+    }
   }
 
   // --- metadata and its assets ---
@@ -339,6 +347,10 @@ function validate(file: string, script: Record<string, unknown>) {
       if (!Array.isArray(options) || options.length === 0) {
         err(file, `${where}: select question "${key}" has no options`);
       }
+    }
+    // The app's Settings tab shows a text answer as it is and hides a password until asked
+    if (q.type === "text" && SECRET_KEY.test(key)) {
+      err(file, `${where}: question "${key}" names a secret, so make its type "password"`);
     }
   };
 
@@ -733,6 +745,19 @@ function validate(file: string, script: Record<string, unknown>) {
             const titles = [widget.title, ...widget.slides.map((slide) => (isObject(slide) ? slide.title : undefined))];
             if (new Set(titles).size !== titles.length) {
               err(file, `${where}: each view needs its own title; the widget's and every slide's must differ`);
+            }
+          }
+        }
+        // Stat fields the app's Settings tab shows, read-only, each with Copy
+        if (widget.settings !== undefined) {
+          if (!Array.isArray(widget.settings) || widget.settings.length === 0) {
+            err(file, `${where}: settings must be a non-empty array`);
+          } else {
+            if (widget.settings.length > WIDGET_MAX_SETTINGS) err(file, `${where}: max ${WIDGET_MAX_SETTINGS} settings`);
+            for (const [k, setting] of widget.settings.entries()) {
+              if (!isObject(setting) || typeof setting.field !== "string" || !setting.field.trim()) {
+                err(file, `${where}.settings[${k}]: field is missing`);
+              }
             }
           }
         }

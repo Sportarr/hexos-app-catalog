@@ -4,17 +4,27 @@
   "internal": true,
   "metadata": {
     "name": "Valheim",
-    "description": "Your own Valheim world, running on this server so friends can play in it whenever they like. They join with a join code from any platform Valheim plays across, and nothing needs setting up on your router. The server updates Valheim itself whenever nobody is playing, and backs up the world every hour.",
+    "description": "A collaborative exploration and survival game for 1-10 players, set in a procedurally generated afterlife inspired by Viking culture. Battle, build, and conquer your way to a saga worthy of Odin's patronage! Supports crossplay between PC and consoles.",
     "icon": "valheim/icon.png",
     "version": "1.4.1",
     "categories": ["games"],
+    "screenshots": [
+      "valheim/screenshot-1.jpg",
+      "valheim/screenshot-2.jpg",
+      "valheim/screenshot-3.jpg",
+      "valheim/screenshot-4.jpg",
+      "valheim/screenshot-5.jpg",
+      "valheim/screenshot-6.jpg",
+      "valheim/screenshot-7.jpg",
+      "valheim/screenshot-8.jpg"
+    ],
     "keywords": ["valheim", "game server", "dedicated server", "crossplay", "multiplayer", "steam", "xbox"],
     "homepage": "https://www.valheimgame.com/",
     "sources": ["https://github.com/community-valheim-tools/valheim-server-docker"]
   },
   "script": {
-    "version": "1.0.0",
-    "changeLog": "Valheim on crossplay with a join code, on ghcr.io/community-valheim-tools/valheim-server 1.4.1."
+    "version": "1.1.1",
+    "changeLog": "The server notes who joins and leaves, and the world it runs, so the app card shows who's online."
   },
   "requirements": {
     "locations": ["ApplicationsPerformance"],
@@ -85,7 +95,11 @@
       { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosSession", "value": "cat > /config/hexos-session.txt" },
       { "name": "VALHEIM_LOG_FILTER_CONTAINS_HexosNewCode", "value": "Created new join code" },
       { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosNewCode", "value": "cat > /config/hexos-session.txt" },
-      { "name": "PRE_SERVER_RUN_HOOK", "value": "rm -f /config/hexos-session.txt" }
+      { "name": "VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerIn", "value": "Got character ZDOID from" },
+      { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerIn", "value": "cat >> /config/hexos-players.txt" },
+      { "name": "VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerOut", "value": "Destroying abandoned non persistent zdo" },
+      { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerOut", "value": "cat >> /config/hexos-players.txt" },
+      { "name": "PRE_SERVER_RUN_HOOK", "value": "rm -f /config/hexos-session.txt /config/hexos-players.txt; printf '%s' \"${WORLD_NAME}\" > /config/hexos-world.txt" }
     ],
     "host_network": false,
     "ports": [
@@ -119,10 +133,10 @@
   },
   "widgets": [
     {
-      "id": "join",
-      "title": "Play with friends",
-      "description": "The code friends type in Valheim to join this server.",
-      "refresh": 30,
+      "id": "players",
+      "title": "Online now",
+      "description": "Who's online in this server's world, and the code friends join it with.",
+      "refresh": 10,
       "conditions": [
         {
           "role": "availability",
@@ -130,13 +144,13 @@
           "app": "valheim"
         }
       ],
+      "background": { "field": "online" },
       "slots": [
-        {
-          "type": "stat",
-          "field": "code"
-        }
+        { "type": "stat", "field": "count" },
+        { "type": "list", "field": "online", "rows": 1 }
       ],
-      "script": "valheim/widget_join.ts",
+      "settings": [{ "field": "code" }],
+      "script": "valheim/widget_players.ts",
       "entrypoint": "run",
       "timeout": 5
     }

@@ -1350,7 +1350,8 @@
         ],
         "permissions": ["READ_WRITE_LOCATIONS"],
         "specifications": ["4CORE", "30GB", "16GBRAM"],
-        "ports": [30443, 38212, 38211]
+        "ports": [30443, 38212, 38211],
+        "game_port": 38211
     },
     "ensure_directories_exists": [
         {
