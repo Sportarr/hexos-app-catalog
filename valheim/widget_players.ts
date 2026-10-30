@@ -3,8 +3,9 @@ import { readFileSync } from "node:fs";
 
 import type { WidgetContext, WidgetFieldValue, WidgetMount, WidgetQueryResult } from "../_lib/widget_context";
 
-// Who's playing, out of Valheim's ten, over a campfire; the card folds back to the plain one while
-// nobody is, as Plex's does while nothing plays. The join code rides along for the Settings tab.
+// Who's online, out of Valheim's ten, over a campfire: the world's name, and the players under it.
+// The card folds back to the plain one while nobody is, as Plex's does while nothing plays. The
+// join code rides along for the Settings tab.
 //
 // The join code. A crossplay server logs its code when it registers, again when it replaces it
 // (two seconds later on demeter), and when its session becomes active:
@@ -23,9 +24,13 @@ import type { WidgetContext, WidgetFieldValue, WidgetMount, WidgetQueryResult } 
 // Dying logs the character as 0:0, and respawning logs a new one under the same peer. The filter
 // appends both kinds to /config/hexos-players.txt (_HexosPlayerIn, _HexosPlayerOut), and
 // PRE_SERVER_RUN_HOOK removes both files before each start, so a restart begins with nobody on.
+//
+// The world. PRE_SERVER_RUN_HOOK also writes the world the server runs (its WORLD_NAME) to
+// /config/hexos-world.txt; a server started by script 1.1.0 or older has none, and reads "Valheim".
 
 const SESSION_FILE = "/hexos-session.txt";
 const PLAYERS_FILE = "/hexos-players.txt";
+const WORLD_FILE = "/hexos-world.txt";
 /** A dedicated Valheim server takes ten players. */
 const MAX_PLAYERS = 10;
 // Anchored at the end, or at the code itself, so a server name with "join code 12" in it is never read as one
@@ -73,6 +78,13 @@ export function players(text: string): string[] {
   return [...online.values()];
 }
 
+/** Who's online in a line: "Odvar Firebear, June Fireshield, and 3 more". */
+export function playersLine(names: string[]): string {
+  if (names.length <= 2) return names.join(" and ");
+  if (names.length === 3) return `${names[0]}, ${names[1]}, and ${names[2]}`;
+  return `${names[0]}, ${names[1]}, and ${names.length - 2} more`;
+}
+
 function read(mount: WidgetMount | undefined, file: string): string {
   if (!mount) return "";
   try {
@@ -86,9 +98,10 @@ export async function run(ctx: WidgetContext): Promise<WidgetQueryResult> {
   const config = configMount(ctx.mounts);
   const names = players(read(config, PLAYERS_FILE));
   const code = joinCode(read(config, SESSION_FILE));
+  const world = read(config, WORLD_FILE).trim() || "Valheim";
   const fields: Record<string, WidgetFieldValue> = {
-    // The card draws the first entry's picture behind a list that shows more than one row
-    players: { type: "list", entries: names.map((title, i) => (i === 0 ? { title, image: CAMPFIRE } : { title })) },
+    // One entry while anyone's on: the world's name in bold, the players in the small line under it
+    online: { type: "list", entries: names.length ? [{ title: world, subtitle: playersLine(names), image: CAMPFIRE }] : [] },
     count: { type: "stat", label: "Players", value: `${names.length}/${MAX_PLAYERS}` },
   };
   if (code) fields.code = { type: "stat", label: "Join code", value: code };

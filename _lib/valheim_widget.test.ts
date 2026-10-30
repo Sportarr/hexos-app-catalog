@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import type { WidgetContext } from "./widget_context";
-import { joinCode, players, run } from "../valheim/widget_players";
+import { joinCode, players, playersLine, run } from "../valheim/widget_players";
 
 // The lines a crossplay server installed by HexOS logged on demeter (TrueNAS 25.10.3, image 1.4.1)
 // on 2026-10-29, the code replaced two seconds after it registered
@@ -31,10 +31,11 @@ const context = (configDir: string | null): WidgetContext => ({
   log: () => {},
 });
 
-function configDir(files: { session?: string; players?: string } = {}): string {
+function configDir(files: { session?: string; players?: string; world?: string } = {}): string {
   const dir = mkdtempSync(`${tmpdir()}/valheim-`);
   if (files.session !== undefined) writeFileSync(`${dir}/hexos-session.txt`, files.session);
   if (files.players !== undefined) writeFileSync(`${dir}/hexos-players.txt`, files.players);
+  if (files.world !== undefined) writeFileSync(`${dir}/hexos-world.txt`, files.world);
   return dir;
 }
 
@@ -109,31 +110,52 @@ describe("players", () => {
   });
 });
 
+describe("playersLine", () => {
+  test("names up to three players and counts the rest", () => {
+    expect(playersLine(["Odvar Firebear"])).toBe("Odvar Firebear");
+    expect(playersLine(["Odvar Firebear", "June Fireshield"])).toBe("Odvar Firebear and June Fireshield");
+    expect(playersLine(["Odvar Firebear", "June Fireshield", "Astrid"])).toBe("Odvar Firebear, June Fireshield, and Astrid");
+    const five = ["Odvar Firebear", "June Fireshield", "Astrid", "Bjorn", "Sigrid"];
+    expect(playersLine(five)).toBe("Odvar Firebear, June Fireshield, and 3 more");
+  });
+});
+
 describe("run", () => {
+  const online = async (files: Parameters<typeof configDir>[0]) => {
+    const list = (await run(context(configDir(files)))).fields?.online;
+    if (list?.type !== "list") throw new Error("online is not a list");
+    return list.entries;
+  };
+
   test("with nobody on, the list is empty so the card folds, and the code is there for Settings", async () => {
-    const result = await run(context(configDir({ session: `${ACTIVE}\n` })));
-    expect(result.fields?.players).toEqual({ type: "list", entries: [] });
+    const result = await run(context(configDir({ session: `${ACTIVE}\n`, world: "Midgard" })));
+    expect(result.fields?.online).toEqual({ type: "list", entries: [] });
     expect(result.fields?.count).toEqual({ type: "stat", label: "Players", value: "0/10" });
     expect(result.fields?.code).toEqual({ type: "stat", label: "Join code", value: "282677" });
     expect(result.needsSetup).toBeUndefined();
   });
 
-  test("players show out of ten, the campfire behind the first and only the first", async () => {
-    const log = [spawned("Astrid", "111"), spawned("Bjorn", "222"), spawned("Sigrid", "333")].join("\n");
-    const result = await run(context(configDir({ session: `${ACTIVE}\n`, players: log })));
+  test("with players on, one entry: the world in bold, the players under it, over the campfire", async () => {
+    const log = [spawned("Odvar Firebear", "111"), spawned("June Fireshield", "222"), spawned("Astrid", "333")].join("\n");
+    const result = await run(context(configDir({ session: `${ACTIVE}\n`, players: log, world: "Midgard\n" })));
     expect(result.fields?.count).toEqual({ type: "stat", label: "Players", value: "3/10" });
-    const list = result.fields?.players;
-    if (list?.type !== "list") throw new Error("players is not a list");
-    expect(list.entries.map((entry) => entry.title)).toEqual(["Astrid", "Bjorn", "Sigrid"]);
-    expect(list.entries[0].image).toStartWith("data:image/webp;base64,");
-    expect(list.entries[0].image!.length).toBeLessThanOrEqual(60_000);
-    expect(list.entries.slice(1).every((entry) => entry.image === undefined)).toBe(true);
+    const [entry, ...rest] = await online({ players: log, world: "Midgard\n" });
+    expect(rest).toEqual([]);
+    expect(entry.title).toBe("Midgard");
+    expect(entry.subtitle).toBe("Odvar Firebear, June Fireshield, and Astrid");
+    expect(entry.image).toStartWith("data:image/webp;base64,");
+    expect(entry.image!.length).toBeLessThanOrEqual(60_000);
+  });
+
+  test("a server started before the world file reads Valheim, and so does an empty one", async () => {
+    expect((await online({ players: ODVAR_IN }))[0].title).toBe("Valheim");
+    expect((await online({ players: ODVAR_IN, world: "" }))[0].title).toBe("Valheim");
   });
 
   test("before the server is ready there is no code and nobody on, and the card still folds", async () => {
     const result = await run(context(configDir()));
     expect(result.fields?.code).toBeUndefined();
-    expect(result.fields?.players).toEqual({ type: "list", entries: [] });
+    expect(result.fields?.online).toEqual({ type: "list", entries: [] });
   });
 
   test("with no mounts known, the same", async () => {

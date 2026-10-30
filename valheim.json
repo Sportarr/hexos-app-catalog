@@ -23,8 +23,8 @@
     "sources": ["https://github.com/community-valheim-tools/valheim-server-docker"]
   },
   "script": {
-    "version": "1.1.0",
-    "changeLog": "The server notes who joins and leaves, so the app card shows who's playing."
+    "version": "1.1.1",
+    "changeLog": "The server notes who joins and leaves, and the world it runs, so the app card shows who's online."
   },
   "requirements": {
     "locations": ["ApplicationsPerformance"],
@@ -99,7 +99,7 @@
       { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerIn", "value": "cat >> /config/hexos-players.txt" },
       { "name": "VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerOut", "value": "Destroying abandoned non persistent zdo" },
       { "name": "ON_VALHEIM_LOG_FILTER_CONTAINS_HexosPlayerOut", "value": "cat >> /config/hexos-players.txt" },
-      { "name": "PRE_SERVER_RUN_HOOK", "value": "rm -f /config/hexos-session.txt /config/hexos-players.txt" }
+      { "name": "PRE_SERVER_RUN_HOOK", "value": "rm -f /config/hexos-session.txt /config/hexos-players.txt; printf '%s' \"${WORLD_NAME}\" > /config/hexos-world.txt" }
     ],
     "host_network": false,
     "ports": [
@@ -134,8 +134,8 @@
   "widgets": [
     {
       "id": "players",
-      "title": "Playing now",
-      "description": "Who's playing on this server, and the code friends join it with.",
+      "title": "Online now",
+      "description": "Who's online in this server's world, and the code friends join it with.",
       "refresh": 10,
       "conditions": [
         {
@@ -144,10 +144,10 @@
           "app": "valheim"
         }
       ],
-      "background": { "field": "players" },
+      "background": { "field": "online" },
       "slots": [
         { "type": "stat", "field": "count" },
-        { "type": "list", "field": "players", "rows": 2 }
+        { "type": "list", "field": "online", "rows": 1 }
       ],
       "settings": [{ "field": "code" }],
       "script": "valheim/widget_players.ts",
