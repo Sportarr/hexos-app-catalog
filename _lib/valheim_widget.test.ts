@@ -179,7 +179,7 @@ describe("when the HexOS container can't see the app's dataset", () => {
     globalThis.fetch = realFetch;
   });
 
-  const header = (name: string, size: number, type: string): Uint8Array => {
+  const header = (name: string, size: number, type: string) => {
     const block = new Uint8Array(512);
     const put = (text: string, at: number) => block.set(new TextEncoder().encode(text), at);
     put(name, 0);
@@ -187,13 +187,13 @@ describe("when the HexOS container can't see the app's dataset", () => {
     put(type, 156);
     return block;
   };
-  const padded = (text: string): Uint8Array => {
+  const padded = (text: string) => {
     const bytes = new TextEncoder().encode(text);
     const body = new Uint8Array(Math.ceil(bytes.length / 512) * 512);
     body.set(bytes);
     return body;
   };
-  const tar = (...blocks: Uint8Array[]): Uint8Array => {
+  const tar = (...blocks: Uint8Array[]) => {
     const all = new Uint8Array(blocks.reduce((sum, block) => sum + block.length, 0) + 1024);
     let at = 0;
     for (const block of blocks) {
@@ -269,13 +269,14 @@ describe("when the HexOS container can't see the app's dataset", () => {
   });
 
   test("an error from Docker is never read as the file", async () => {
-    globalThis.fetch = (async () => new Response(tarOf("file", ACTIVE), { status: 500 })) as typeof fetch;
+    globalThis.fetch = (async (_input: RequestInfo | URL) =>
+      new Response(tarOf("file", ACTIVE), { status: 500 })) as typeof fetch;
     const result = await run(context(`${tmpdir()}/valheim-not-mounted`));
     expect(result.fields?.code).toEqual({ type: "stat", label: "Join code", value: "" });
   });
 
   test("a box with no socket reads empty rather than failing the widget", async () => {
-    globalThis.fetch = (async () => {
+    globalThis.fetch = (async (_input: RequestInfo | URL): Promise<Response> => {
       throw new Error("ENOENT: /var/run/docker.sock");
     }) as typeof fetch;
     const result = await run(context(`${tmpdir()}/valheim-not-mounted`));
